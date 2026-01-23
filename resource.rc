@@ -1,23 +1,23 @@
 #pragma code_page(65001)
 1 VERSIONINFO
 FILEFLAGS 0x0
-PRODUCTVERSION 1, 1, 0, 0
-FILEOS 0x40004
-FILETYPE 0x1
 FILEVERSION 1, 1, 0, 0
-FILEFLAGSMASK 0x3f
+PRODUCTVERSION 1, 1, 0, 0
 FILESUBTYPE 0x0
+FILEOS 0x40004
+FILEFLAGSMASK 0x3f
+FILETYPE 0x1
 {
 BLOCK "StringFileInfo"
 {
 BLOCK "000004b0"
 {
-VALUE "OriginalFilename", "shred_and_delete.exe"
 VALUE "LegalCopyright", "Copyright © 2024 Tarvi Tasane"
+VALUE "FileDescription", "A rust-based file shredder"
 VALUE "ProductVersion", "1.1.0"
+VALUE "OriginalFilename", "shred_and_delete.exe"
 VALUE "ProductName", "shred_and_delete"
 VALUE "FileVersion", "1.0.0"
-VALUE "FileDescription", "A rust-based file shredder"
 }
 }
 BLOCK "VarFileInfo" {
