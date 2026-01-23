@@ -1,22 +1,21 @@
-// src/overwrite.rs
-
 use std::fs::File;
 use std::io::{Write, Seek, SeekFrom, Result};
 use std::path::Path;
 use rand::rngs::OsRng;
 use rand::RngCore;
 use walkdir::WalkDir;
+use crate::{PathType, Query};
 use crate::utils::is_dir_empty;
 
-pub fn overwrite_path_with_random_data<P: AsRef<Path>>(path: P) -> Result<()> {
-    let path = path.as_ref();
+pub fn overwrite_with_random_data(query: &Query) -> Result<()> {
+    match query.path_type {
+        PathType::Directory => {
+            if is_dir_empty(query.path)? {
+                return Ok(());
+            }
 
-    if path.is_dir() {
-        if is_dir_empty(path)? {
-            return Ok(())
-        } else {
             // WalkDir crate allows us to traverse the directory recursively
-            for entry in WalkDir::new(path).min_depth(1) {
+            for entry in WalkDir::new(query.path).min_depth(1) {
                 match entry {
                     Ok(entry) => {
                         let entry_path = entry.path();
@@ -30,20 +29,21 @@ pub fn overwrite_path_with_random_data<P: AsRef<Path>>(path: P) -> Result<()> {
                     Err(e) => eprintln!("Failed to read directory entry: {}", e),
                 }
             }
+
             Ok(())
         }
-    } 
-    else {
-        match write_random_data(path) {
-            Ok(_) => println!("Successfully shredded: {:?}", path.to_str().unwrap_or("Invalid UTF-8 path")),
-            Err(_) => println!("Failed to shred: {:?}", path.to_str().unwrap_or("Invalid UTF-8 path")),
-        };
+        PathType::File => {
+            match write_random_data(query.path) {
+                Ok(_) => println!("Successfully shredded: {:?}", query.path.to_str().unwrap_or("Invalid UTF-8 path")),
+                Err(_) => println!("Failed to shred: {:?}", query.path.to_str().unwrap_or("Invalid UTF-8 path")),
+            };
 
-        Ok(())
-    } 
+            Ok(())
+        }
+    }
 }
 
-pub fn write_random_data<P: AsRef<Path>>(path: P) -> Result<()> {
+fn write_random_data(path: &Path) -> Result<()> {
     let mut file = File::options().write(true).open(path)?;
 
     let file_size = file.metadata()?.len();

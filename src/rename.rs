@@ -5,6 +5,8 @@ use rand::distributions::Alphanumeric;
 use rand::Rng;
 use rand::rngs::OsRng;
 use walkdir::WalkDir;
+use crate::PathType;
+use crate::Query;
 use crate::utils::is_dir_empty;
 
 pub fn generate_random_name(extension: &str) -> String {
@@ -16,54 +18,31 @@ pub fn generate_random_name(extension: &str) -> String {
     
     if extension.is_empty() {
         rand_string
-    } 
-    else {
+    } else {
         format!("{}.{}", rand_string, extension)
     }
 }
 
-pub fn rename_path_to_random<P: AsRef<Path>>(path: P) -> io::Result<PathBuf> {
-    let path = path.as_ref();
-
-    if path.is_dir() {
-        if is_dir_empty(path)? {
-            return rename_directory(path);
-        } else {
-            return rename_files_and_directories(path);
-        }
-    }
-    else {
-        rename_file(path)
+pub fn rename_to_random(query: &Query) -> io::Result<PathBuf> {
+    if query.path_type == &PathType::Directory && !is_dir_empty(query.path)? {
+        rename_files_and_directories(query.path)
+    } else {
+        rename(query.path)
     }
 }
 
-fn rename_file<P: AsRef<Path>>(path: P) -> io::Result<PathBuf> {
-    let path = path.as_ref();
+fn rename(path: &Path) -> io::Result<PathBuf> {
+    let parent_dir: &Path = path.parent().unwrap_or_else(|| Path::new(""));
     let extension = path.extension().and_then(|ext| ext.to_str()).unwrap_or("");
-    let parent_dir = path.parent().unwrap_or_else(|| Path::new(""));
-
     let new_name = generate_random_name(extension);
-    let new_path = parent_dir.join(new_name);
+    let final_path = parent_dir.join(new_name);
 
-    fs::rename(path, &new_path)?;
+    fs::rename(path, &final_path)?;
 
-    Ok(new_path)
+    Ok(final_path)
 }
 
-fn rename_directory<P: AsRef<Path>>(path: P) -> io::Result<PathBuf> {
-    let path = path.as_ref();
-    let parent_dir = path.parent().unwrap_or_else(|| Path::new(""));
-    
-    let new_name = generate_random_name("");
-    let new_path = parent_dir.join(new_name);
-
-    fs::rename(path, &new_path)?;
-
-    Ok(new_path)
-}
-
-fn rename_files_and_directories<P: AsRef<Path>>(dir_path: P) -> io::Result<PathBuf> {
-    let dir_path = dir_path.as_ref();
+fn rename_files_and_directories(dir_path: &Path) -> io::Result<PathBuf> {
     let mut files = Vec::new();
     let mut directories = Vec::new();
     
@@ -78,16 +57,16 @@ fn rename_files_and_directories<P: AsRef<Path>>(dir_path: P) -> io::Result<PathB
 
     // Do a rename on files first
     for file in files {
-        rename_file(&file)?;
+        rename(&file)?;
     }
 
     // Then rename the directories, starting with the deepest level
     directories.sort_by_key(|dir| dir.components().count());
     directories.reverse();
-    for directory in directories {
-        rename_directory(directory)?;
+    for directory in directories.iter_mut() {
+        rename(directory)?;
     }
 
     // Finally, rename the root directory
-    rename_directory(dir_path)
+    rename(dir_path)
 }
